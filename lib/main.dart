@@ -17,6 +17,9 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => MyHomePage(),
+        '/responderMensagem': (context) => ResponderMensagemPage(),
+        '/alterarArquivo': (context) => AlterarArquivoPage(),
+        '/calcularFuncao': (context) => CalculadoraPage(),
       },
     );
   }
@@ -35,14 +38,23 @@ class MyHomePage extends StatelessWidget {
           children: [
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ResponderMensagemPage(),
-                  ),
-                );
+                Navigator.pushNamed(context, '/responderMensagem');
               },
               child: Text('Responder Mensagem de Texto'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/alterarArquivo');
+              },
+              child: Text('Alterar Arquivo de Texto'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/calcularFuncao');
+              },
+              child: Text('Calcular Função'),
             ),
           ],
         ),
@@ -61,7 +73,7 @@ class _ResponderMensagemPageState extends State<ResponderMensagemPage> {
 
   Future<void> _enviarMensagem(BuildContext context) async {
     String mensagem = _mensagemController.text;
-    String url = 'http://localhost:5001/servicos';
+    String url = 'http://192.168.3.117:5001/servicos';
 
     Map<String, String> data = {
       'servico': 'mensagem',
@@ -118,6 +130,211 @@ class _ResponderMensagemPageState extends State<ResponderMensagemPage> {
             ElevatedButton(
               onPressed: () => _enviarMensagem(context),
               child: Text('Enviar Mensagem'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AlterarArquivoPage extends StatefulWidget {
+  @override
+  _AlterarArquivoPageState createState() => _AlterarArquivoPageState();
+}
+
+class _AlterarArquivoPageState extends State<AlterarArquivoPage> {
+  TextEditingController _nomeArquivoController = TextEditingController();
+  TextEditingController _textoArquivoController = TextEditingController();
+
+  Future<void> _alterarArquivo(BuildContext context) async {
+    String nomeArquivo = _nomeArquivoController.text;
+    String textoArquivo = _textoArquivoController.text;
+    String url = 'http://192.168.3.117:5001/servicos'; // Altere para o endereço correto
+
+    Map<String, String> data = {
+      'servico': 'arquivo',
+      'nome_arquivo': nomeArquivo,
+      'texto': textoArquivo,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${json.decode(response.body)['mensagem']}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        throw 'Erro ao alterar arquivo';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao alterar arquivo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Alterar Arquivo'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _nomeArquivoController,
+              decoration: InputDecoration(
+                labelText: 'Nome do Arquivo',
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _textoArquivoController,
+              decoration: InputDecoration(
+                labelText: 'Texto a ser Inserido',
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _alterarArquivo(context),
+              child: Text('Alterar Arquivo'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class CalculadoraPage extends StatefulWidget {
+  @override
+  _CalculadoraPageState createState() => _CalculadoraPageState();
+}
+
+class _CalculadoraPageState extends State<CalculadoraPage> {
+  TextEditingController _numero1Controller = TextEditingController();
+  TextEditingController _numero2Controller = TextEditingController();
+  String _selectedOperation = "+"; // Operação padrão é a soma
+
+  Future<void> _calcular() async {
+    double num1 = double.tryParse(_numero1Controller.text) ?? 0.0;
+    double num2 = double.tryParse(_numero2Controller.text) ?? 0.0;
+    String operacao = _selectedOperation;
+
+    String url = 'http://192.168.3.117:5001/servicos';
+    Map<String, dynamic> data = {
+      'servico': 'calculo',
+      'numero1': num1,
+      'numero2': num2,
+      'operador': operacao,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        var resultado = json.decode(response.body)['resultado'];
+        print(resultado);
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Resultado"),
+              content: Text("O resultado da operação é: $resultado"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        throw 'Erro ao calcular';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao calcular: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Calcular Função'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _numero1Controller,
+              decoration: InputDecoration(
+                labelText: 'Número 1',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 20),
+            DropdownButton<String>(
+              value: _selectedOperation,
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedOperation = newValue!;
+                });
+              },
+              items: <String>['+', '-', '*', '/']
+                  .map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _numero2Controller,
+              decoration: InputDecoration(
+                labelText: 'Número 2',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _calcular,
+              child: Text('Calcular'),
             ),
           ],
         ),
