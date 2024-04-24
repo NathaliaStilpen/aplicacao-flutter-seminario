@@ -20,6 +20,8 @@ class MyApp extends StatelessWidget {
         '/responderMensagem': (context) => ResponderMensagemPage(),
         '/alterarArquivo': (context) => AlterarArquivoPage(),
         '/calcularFuncao': (context) => CalculadoraPage(),
+        '/comprarCredito': (context) => ComprarCreditoPage(),
+        '/compraSucesso': (context) => CompraSucessoPage(), // Nova tela para mostrar a compra bem-sucedida
       },
     );
   }
@@ -56,12 +58,157 @@ class MyHomePage extends StatelessWidget {
               },
               child: Text('Calcular Função'),
             ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/comprarCredito');
+              },
+              child: Text('Comprar Crédito'),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+
+class ComprarCreditoPage extends StatefulWidget {
+  @override
+  _ComprarCreditoPageState createState() => _ComprarCreditoPageState();
+}
+
+class _ComprarCreditoPageState extends State<ComprarCreditoPage> {
+  TextEditingController _cpfController = TextEditingController();
+
+  Future<void> _comprarCredito(BuildContext context, int horas) async {
+    String cpf = _cpfController.text;
+    String url = 'http://192.168.3.117:5001/servicos'; // URL do backend Flask
+
+    // Dados da requisição
+    Map<String, dynamic> data = {
+      'servico': 'adicionar',
+      'cpf': cpf,
+      'creditos': horas, // Quantidade de horas a serem compradas
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        var saldo = json.decode(response.body)['saldo'];
+        // Redirecionar para a página de compra bem-sucedida com o valor do saldo
+        Navigator.pushReplacementNamed(context, '/compraSucesso', arguments: saldo);
+      } else {
+        throw 'Erro ao realizar compra';
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao realizar compra: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Comprar Crédito'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _cpfController,
+              decoration: InputDecoration(
+                labelText: 'CPF',
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Escolha a quantidade de horas:',
+              style: TextStyle(fontSize: 18),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _comprarCredito(context, 1), // Compra de 1 hora
+              child: Text('1 hora'),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _comprarCredito(context, 2), // Compra de 2 horas
+              child: Text('2 horas'),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _comprarCredito(context, 3), // Compra de 3 horas
+              child: Text('3 horas'),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _comprarCredito(context, 4), // Compra de 4 horas
+              child: Text('4 horas'),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _comprarCredito(context, 5), // Compra de 5 horas
+              child: Text('5 horas'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Nova tela para mostrar a compra bem-sucedida
+class CompraSucessoPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final saldo = ModalRoute.of(context)!.settings.arguments as int;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Compra Realizada com Sucesso'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 100,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Compra realizada com sucesso!',
+              style: TextStyle(fontSize: 20),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Novo saldo: $saldo',
+              style: TextStyle(fontSize: 18),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// As outras classes e funções permanecem iguais...
+
 
 class ResponderMensagemPage extends StatefulWidget {
   @override
@@ -222,7 +369,6 @@ class _AlterarArquivoPageState extends State<AlterarArquivoPage> {
     );
   }
 }
-
 
 class CalculadoraPage extends StatefulWidget {
   @override
